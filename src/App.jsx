@@ -52,9 +52,9 @@ function App() {
     return () => clearInterval(backendPoll);
   }, []);
 
-  // Check reminders every 10 seconds
+  // Check reminders and detect Offline Misses
   useEffect(() => {
-    const interval = setInterval(() => {
+    const checkReminders = () => {
       const now = Date.now();
       
       setReminders(prevReminders => {
@@ -62,11 +62,24 @@ function App() {
         prevReminders.forEach(reminder => {
           if (reminder.timestamp <= now && !reminder.notified) {
             triggerIds.push(reminder.id);
+            
+            // Check if notification was missed (offline for > 2 minutes)
+            const timeDriftMs = now - reminder.timestamp;
+            const isMissedOffline = timeDriftMs > 120000;
+            
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('SynqNotify Alert', {
-                body: reminder.title,
-                icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827370.png'
-              });
+              if (isMissedOffline) {
+                const timeStr = new Date(reminder.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                new Notification('⚠️ Missed System Reminder', {
+                  body: `You missed a reminder at ${timeStr}: ${reminder.title}`,
+                  icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827370.png'
+                });
+              } else {
+                new Notification('SynqNotify Alert', {
+                  body: reminder.title,
+                  icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827370.png'
+                });
+              }
             }
           }
         });
@@ -76,8 +89,11 @@ function App() {
         }
         return prevReminders;
       });
-    }, 10000);
+    };
 
+    // Run heavily optimized check instantly on browser load, then every 10s
+    checkReminders();
+    const interval = setInterval(checkReminders, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -91,60 +107,60 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
+    <div className="app-layout">
       {/* Sidebar */}
-      <aside style={{ width: '260px', borderRight: 'var(--glass-border)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px', background: 'var(--bg-secondary)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'var(--accent-primary)', padding: '8px', borderRadius: '12px' }}>
+      <aside className="sidebar">
+        <div className="sidebar-header">
+          <div className="logo-icon">
             <Bell size={24} color="white" />
           </div>
           <h2 className="gradient-text" style={{ fontSize: '1.25rem' }}>SynqNotify</h2>
         </div>
         
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <nav className="sidebar-nav">
           <button 
-            onClick={() => setActiveTab('dashboard')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: activeTab === 'dashboard' ? 'rgba(255,255,255,0.05)' : 'transparent', color: activeTab === 'dashboard' ? 'var(--text-primary)' : 'var(--text-secondary)', width: '100%', textAlign: 'left' }}>
+            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}>
             <LayoutDashboard size={20} />
-            <span style={{ fontWeight: 500 }}>Dashboard</span>
+            <span>Dashboard</span>
           </button>
           <button 
-            onClick={() => setActiveTab('monitor')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: activeTab === 'monitor' ? 'rgba(255,255,255,0.05)' : 'transparent', color: activeTab === 'monitor' ? 'var(--text-primary)' : 'var(--text-secondary)', width: '100%', textAlign: 'left' }}>
+            className={`nav-item ${activeTab === 'monitor' ? 'active' : ''}`}
+            onClick={() => setActiveTab('monitor')}>
             <Activity size={20} />
-            <span style={{ fontWeight: 500 }}>System Monitor</span>
+            <span>System</span>
           </button>
           <button 
-            onClick={() => setActiveTab('settings')}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: activeTab === 'settings' ? 'rgba(255,255,255,0.05)' : 'transparent', color: activeTab === 'settings' ? 'var(--text-primary)' : 'var(--text-secondary)', width: '100%', textAlign: 'left' }}>
+            className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}>
             <Settings size={20} />
-            <span style={{ fontWeight: 500 }}>Settings</span>
+            <span>Settings</span>
           </button>
         </nav>
 
-        <div style={{ marginTop: 'auto', background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '16px', border: 'var(--glass-border)' }}>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>Enable Cloud Sync to get alerts on your phone</p>
-          <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '0.875rem' }} onClick={() => setActiveTab('settings')}>
+        <div className="sync-card">
+          <p>Enable Cloud Sync to get alerts on your phone</p>
+          <button className="btn-primary" onClick={() => setActiveTab('settings')}>
             Sync Devices
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+      <main className="main-content">
+        <header className="main-header">
           <div>
             <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>
               {activeTab === 'dashboard' ? 'Your Reminders' : activeTab === 'monitor' ? 'System Overview' : 'Application Settings'}
             </h1>
-            <p style={{ color: 'var(--text-secondary)' }}>
+            <p className="subtitle">
               {activeTab === 'dashboard' ? 'Manage and sync your notifications across desktop and mobile.' : activeTab === 'monitor' ? 'Deep OS integration and developer webhooks.' : 'Configure cloud sync and email protocols.'}
             </p>
           </div>
           {activeTab === 'dashboard' && (
             <button className="btn-primary" onClick={() => setShowForm(true)}>
               <Plus size={20} />
-              New Reminder
+              <span className="btn-text">New Reminder</span>
             </button>
           )}
         </header>
@@ -152,7 +168,7 @@ function App() {
         {activeTab === 'dashboard' ? (
           <>
             {showForm && (
-              <div className="animate-slide-in glass-panel" style={{ padding: '24px', marginBottom: '32px' }}>
+              <div className="animate-slide-in glass-panel create-form">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                   <h3 style={{ fontSize: '1.25rem' }}>Create New Reminder</h3>
                   <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
