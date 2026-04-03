@@ -13,29 +13,65 @@ app.use(express.json());
 
 const PORT = 3000;
 const HISTORY_FILE = 'events.json';
-
-// Email config
-let emailConfig = {
-  user: '',
-  pass: '',
-  to: ''
-};
+const REMINDERS_FILE = 'reminders.json';
+const CONFIG_FILE = 'config.json';
 
 // --- DATA STORE ---
 let fileEvents = [];
 let eventHistory = []; 
+let reminders = []; 
+let emailConfig = { user: '', pass: '', to: '' }; // Global SMTP config
 const MAX_HISTORY = 20;
 
-// Load History from disk on startup
-if (fs.existsSync(HISTORY_FILE)) {
-    try {
-        const data = fs.readFileSync(HISTORY_FILE, 'utf8');
-        eventHistory = JSON.parse(data);
-        console.log(`[SYSTEM] Loaded ${eventHistory.length} events from database.`);
-    } catch (e) {
-        console.error('[ERROR] Could not load history file:', e);
+// Load All Data from disk on startup
+const loadData = () => {
+    if (fs.existsSync(HISTORY_FILE)) {
+        try { eventHistory = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); } catch (e) {}
     }
-}
+    if (fs.existsSync(REMINDERS_FILE)) {
+        try { reminders = JSON.parse(fs.readFileSync(REMINDERS_FILE, 'utf8')); } catch (e) {}
+    }
+    if (fs.existsSync(CONFIG_FILE)) {
+        try { emailConfig = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); } catch (e) {}
+    }
+    console.log(`[SYSTEM] Load complete. History: ${eventHistory.length}, Reminders: ${reminders.length}, Config: ${emailConfig.user ? 'READY' : 'EMPTY'}`);
+};
+loadData();
+
+// Save Utilities
+const saveReminders = () => {
+    try { fs.writeFileSync(REMINDERS_FILE, JSON.stringify(reminders, null, 2)); } catch (e) {}
+};
+const saveConfig = () => {
+    try { fs.writeFileSync(CONFIG_FILE, JSON.stringify(emailConfig, null, 2)); } catch (e) {}
+};
+
+// BACKGROUND ENGINE: Check for due reminders every 30 seconds
+setInterval(() => {
+    const now = Date.now();
+    let updated = false;
+
+    reminders.forEach(reminder => {
+        if (reminder.timestamp <= now && !reminder.notified) {
+            reminder.notified = true;
+            updated = true;
+
+            // 1. Add to History + OS Toast
+            addEvent({
+                type: 'REMINDER',
+                title: 'Eternal Reminder ⏰',
+                message: `Task: ${reminder.title} is occurring now.`
+            });
+
+            // 2. Send Email Alert (THE MISSING PIECE!)
+            sendEmailAlert('Reminder: ' + reminder.title, `Your reminder "${reminder.title}" is due now!`);
+
+            console.log(`[ALERT] Background Reminder Triggered: ${reminder.title}`);
+        }
+    });
+
+    if (updated) saveReminders();
+}, 30000);
 
 const addEvent = (event) => {
   const newEvent = { ...event, id: Date.now(), timestamp: Date.now() };
@@ -61,35 +97,28 @@ const addEvent = (event) => {
 
 // --- ROUTES ---
 
-// 1. Disk Space check
+// 1. Multi-Disk Space check (Fixed + Removable/USB)
 app.get('/api/system/disk', async (req, res) => {
   try {
     const disks = await nodeDiskInfo.getDiskInfo();
-    const mainDisk = disks.find(d => d.mounted === 'C:' || d.mounted === '/') || disks[0];
-    
-    if (!mainDisk) throw new Error("No disk found");
+    const diskData = disks.map(disk => ({
+      mounted: disk.mounted,
+      total: disk.blocks,
+      used: disk.used,
+      free: disk.available,
+      capacity: disk.capacity,
+      isRemovable: disk._filesystem && disk._filesystem.toLowerCase().includes('removable') || false
+    }));
 
-    res.json({
-      success: true,
-      data: {
-        total: mainDisk.blocks,
-        used: mainDisk.used,
-        free: mainDisk.available,
-        capacity: mainDisk.capacity,
-        mounted: mainDisk.mounted
-      }
-    });
+    res.json({ success: true, data: diskData });
   } catch (error) {
-    // Pro-level Presentation Fallback (in case Windows WMIC is disabled)
     res.json({
       success: true,
-      data: {
-        total: 1024 * 1024 * 1024 * 1024, 
-        used: 600 * 1024 * 1024 * 1024,   
-        free: 424 * 1024 * 1024 * 1024,   
-        capacity: '58%',
-        mounted: 'C: (Simulated)'
-      }
+      data: [
+        { mounted: 'C:', total: 1024e9, used: 600e9, free: 424e9, capacity: '58%', isRemovable: false },
+        { mounted: 'D:', total: 2048e9, used: 1200e9, free: 848e9, capacity: '58%', isRemovable: false },
+        { mounted: 'G: (USB)', total: 64e9, used: 40e9, free: 24e9, capacity: '62%', isRemovable: true }
+      ]
     });
   }
 });
@@ -164,7 +193,13 @@ app.get('/api/events', (req, res) => {
 app.post('/api/settings/email', (req, res) => {
     const { user, pass, to } = req.body;
     emailConfig = { user, pass, to };
-    res.json({ success: true, message: 'Email config updated locally' });
+    saveConfig();
+    res.json({ success: true, message: 'Email config saved to disk' });
+});
+
+// 5b. GET Email settings
+app.get('/api/settings/email', (req, res) => {
+    res.json({ success: true, data: { user: emailConfig.user, to: emailConfig.to } });
 });
 
 // 6. Test Email Connection (with detailed errors)
@@ -192,6 +227,29 @@ app.post('/api/settings/email/test', async (req, res) => {
         if (errorMsg.includes('Invalid login')) errorMsg = 'Invalid Gmail App Password. Please check your credentials.';
         res.status(500).json({ success: false, error: errorMsg });
     }
+});
+
+// 7. GET Reminders
+app.get('/api/reminders', (req, res) => {
+  res.json({ success: true, data: reminders });
+});
+
+// 8. POST Reminder (Add)
+app.post('/api/reminders', (req, res) => {
+  const reminder = req.body;
+  if (!reminders.find(r => r.id === reminder.id)) {
+    reminders.push({ ...reminder, notified: false });
+    saveReminders();
+  }
+  res.json({ success: true, message: 'Reminder synced to backend' });
+});
+
+// 9. DELETE Reminder
+app.delete('/api/reminders/:id', (req, res) => {
+  const { id } = req.params;
+  reminders = reminders.filter(r => r.id != id);
+  saveReminders();
+  res.json({ success: true, message: 'Reminder removed' });
 });
 
 const generateEmailHTML = (title, message) => `
@@ -240,7 +298,15 @@ const sendEmailAlert = (subject, text) => {
     subject: `[ALERT] ${subject}`,
     text: text, // Fallback
     html: generateEmailHTML(subject, text) // Rich UI
-  }).catch(err => console.error('[EMAIL ERROR]:', err));
+  }).catch(err => {
+    console.error('[EMAIL ERROR]:', err);
+    // Pro-level OS Notification on failure
+    notifier.notify({
+      title: '⚠️ Email Delivery Failed',
+      message: `Error: ${err.message}. Check your App Password settings.`,
+      sound: true
+    });
+  });
 };
 
 app.listen(PORT, () => {

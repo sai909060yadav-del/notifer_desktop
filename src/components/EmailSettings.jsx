@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Mail, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const EmailSettings = () => {
   const [email, setEmail] = useState('');
@@ -8,6 +8,18 @@ const EmailSettings = () => {
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Fetch current settings on load
+  useEffect(() => {
+    fetch('http://localhost:3000/api/settings/email')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.data.user) {
+          setEmail(d.data.user);
+          setPass('********'); // Obfuscate password for pro-level security display
+        }
+      });
+  }, []);
 
   const saveSettings = (e) => {
     e.preventDefault();

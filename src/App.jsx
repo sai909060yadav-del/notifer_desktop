@@ -14,17 +14,12 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Load from localStorage
+  // Load from Backend (Cloud Sync)
   useEffect(() => {
-    const saved = localStorage.getItem('reminders');
-    if (saved) {
-      setReminders(JSON.parse(saved));
-    }
+    fetch('http://localhost:3000/api/reminders')
+      .then(r => r.json())
+      .then(d => { if (d.success) setReminders(d.data); });
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('reminders', JSON.stringify(reminders));
-  }, [reminders]);
 
   // Request Notification permission
   useEffect(() => {
@@ -115,12 +110,25 @@ function App() {
   }, []);
 
   const addReminder = (reminder) => {
-    setReminders([...reminders, { ...reminder, id: Date.now(), notified: false }]);
+    const newReminder = { ...reminder, id: Date.now(), notified: false };
+    setReminders([...reminders, newReminder]);
     setShowForm(false);
+
+    // SYNC TO BACKEND
+    fetch('http://localhost:3000/api/reminders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReminder)
+    });
   };
 
   const deleteReminder = (id) => {
     setReminders(reminders.filter(r => r.id !== id));
+    
+    // SYNC TO BACKEND (DELETE)
+    fetch(`http://localhost:3000/api/reminders/${id}`, {
+      method: 'DELETE'
+    });
   };
 
   return (

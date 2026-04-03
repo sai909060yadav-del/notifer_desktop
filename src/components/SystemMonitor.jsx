@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { HardDrive, Activity, Download, Send, Battery, Copy, CheckCircle } from 'lucide-react';
+import { HardDrive, Activity, Download, Send, Battery, Copy, CheckCircle, Usb } from 'lucide-react';
 
 const SystemMonitor = () => {
-  const [disk, setDisk] = useState(null);
+  const [disks, setDisks] = useState([]);
   const [battery, setBattery] = useState({ level: 100, charging: false });
   const [watchPath, setWatchPath] = useState('C:\\Users\\saiya\\Downloads');
 
@@ -29,7 +29,7 @@ const SystemMonitor = () => {
   useEffect(() => {
     fetch('http://localhost:3000/api/system/disk')
       .then(r => r.json())
-      .then(d => { if (d.success) setDisk(d.data); })
+      .then(d => { if (d.success) setDisks(d.data); })
       .catch(e => console.error("Disk API error. Is backend running?", e));
 
     if ('getBattery' in navigator) {
@@ -93,24 +93,38 @@ const SystemMonitor = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      <div className="metrics-row">
-        <div className="glass-panel" style={{ flex: 1, padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', color: 'var(--accent-secondary)' }}>
-            <HardDrive size={24} />
-            <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Storage</h3>
-          </div>
-          {disk ? (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+        {disks.length > 0 ? disks.map((disk, idx) => (
+          <div key={idx} className="glass-panel" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', color: disk.isRemovable ? 'var(--accent-primary)' : 'var(--accent-secondary)' }}>
+              {disk.isRemovable ? <Usb size={24} /> : <HardDrive size={24} />}
+              <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Storage ({disk.mounted})</h3>
+            </div>
             <div>
               <p style={{ margin: '0 0 8px', color: 'var(--text-secondary)' }}>
-                {disk.mounted} - {Math.round(disk.free / 1024 / 1024 / 1024)} GB Free
+                {Math.round(disk.free / 1e9)} GB Free
               </p>
               <div style={{ width: '100%', height: '8px', background: 'var(--bg-primary)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ width: `${(disk.used / disk.capacity) * 100 || 50}%`, height: '100%', background: 'var(--danger)' }} />
+                {/* Use capacity string like "58%" directly or calculate */}
+                <div style={{ 
+                  width: disk.capacity || '50%', 
+                  height: '100%', 
+                  background: parseInt(disk.capacity) > 90 ? 'var(--danger)' : 'var(--success)' 
+                }} />
               </div>
+              <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Total: {Math.round(disk.total / 1e9)} GB
+              </p>
             </div>
-          ) : <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Loading or backend offline...</p>}
-        </div>
+          </div>
+        )) : (
+          <div className="glass-panel" style={{ flex: 1, padding: '24px' }}>
+             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Loading storage data or backend offline...</p>
+          </div>
+        )}
+      </div>
 
+      <div className="metrics-row">
         <div className="glass-panel" style={{ flex: 1, padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', color: 'var(--success)' }}>
             <Battery size={24} />
