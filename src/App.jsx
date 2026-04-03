@@ -6,6 +6,7 @@ import SystemMonitor from './components/SystemMonitor';
 import EmailSettings from './components/EmailSettings';
 import SystemHealth from './components/SystemHealth';
 import ActivityHub from './components/ActivityHub';
+import { apiUrl } from './config/api';
 import './App.css';
 
 function App() {
@@ -16,7 +17,7 @@ function App() {
 
   // Load from Backend (Cloud Sync)
   useEffect(() => {
-    fetch('http://localhost:3000/api/reminders')
+    fetch(apiUrl('/api/reminders'))
       .then(r => r.json())
       .then(d => { if (d.success) setReminders(d.data); });
   }, []);
@@ -31,7 +32,7 @@ function App() {
   // Check backend for File / Webhook events every 5 seconds
   useEffect(() => {
     const backendPoll = setInterval(() => {
-      fetch('http://localhost:3000/api/events')
+      fetch(apiUrl('/api/events'))
         .then(r => r.json())
         .then(data => {
           if (data && data.success) {
@@ -83,7 +84,7 @@ function App() {
               }
 
               // SYNC TO BACKEND FOR EMAIL ALERT
-              fetch('http://localhost:3000/api/notify', {
+              fetch(apiUrl('/api/notify'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -115,7 +116,7 @@ function App() {
     setShowForm(false);
 
     // SYNC TO BACKEND
-    fetch('http://localhost:3000/api/reminders', {
+    fetch(apiUrl('/api/reminders'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newReminder)
@@ -126,7 +127,7 @@ function App() {
     setReminders(reminders.filter(r => r.id !== id));
     
     // SYNC TO BACKEND (DELETE)
-    fetch(`http://localhost:3000/api/reminders/${id}`, {
+    fetch(apiUrl(`/api/reminders/${id}`), {
       method: 'DELETE'
     });
   };

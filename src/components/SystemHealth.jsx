@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Globe, Bell, CheckCircle, AlertTriangle } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 const SystemHealth = () => {
     const [stats, setStats] = useState({
@@ -17,7 +18,7 @@ const SystemHealth = () => {
             // Check Backend
             let backendStatus = 'Offline';
             try {
-                const res = await fetch('http://localhost:3000/api/system/disk');
+                const res = await fetch(apiUrl('/api/system/disk'));
                 if (res.ok) backendStatus = 'Online';
             } catch (e) {
                 backendStatus = 'Offline';

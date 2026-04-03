@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, CheckCircle, AlertTriangle } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 const EmailSettings = () => {
   const [email, setEmail] = useState('');
@@ -11,7 +12,7 @@ const EmailSettings = () => {
 
   // Fetch current settings on load
   useEffect(() => {
-    fetch('http://localhost:3000/api/settings/email')
+    fetch(apiUrl('/api/settings/email'))
       .then(r => r.json())
       .then(d => {
         if (d.success && d.data.user) {
@@ -25,7 +26,7 @@ const EmailSettings = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    fetch('http://localhost:3000/api/settings/email', {
+    fetch(apiUrl('/api/settings/email'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: email, pass: pass, to: email })
@@ -44,7 +45,7 @@ const EmailSettings = () => {
     setError('');
     setSuccess('');
     
-    fetch('http://localhost:3000/api/settings/email/test', {
+    fetch(apiUrl('/api/settings/email/test'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: email, pass: pass, to: email })

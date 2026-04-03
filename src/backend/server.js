@@ -6,6 +6,7 @@ import chokidar from 'chokidar';
 import path from 'path';
 import fs from 'fs';
 import notifier from 'node-notifier'; // NEW: Native OS toasts
+import { execFile } from 'child_process';
 
 const app = express();
 app.use(cors());
@@ -15,6 +16,51 @@ const PORT = 3000;
 const HISTORY_FILE = 'events.json';
 const REMINDERS_FILE = 'reminders.json';
 const CONFIG_FILE = 'config.json';
+
+const getWindowsDiskInfo = () =>
+  new Promise((resolve, reject) => {
+    const psScript = "Get-CimInstance Win32_LogicalDisk | Select-Object DeviceID,Size,FreeSpace,DriveType | ConvertTo-Json -Compress";
+
+    execFile(
+      'powershell',
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', psScript],
+      { windowsHide: true, maxBuffer: 1024 * 1024 },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(new Error(stderr || error.message));
+          return;
+        }
+
+        try {
+          const parsed = JSON.parse((stdout || '[]').trim() || '[]');
+          const rows = Array.isArray(parsed) ? parsed : [parsed];
+
+          const diskData = rows
+            .filter((row) => row && row.DeviceID)
+            .map((row) => {
+              const total = Number(row.Size || 0);
+              const free = Number(row.FreeSpace || 0);
+              const used = Math.max(total - free, 0);
+              const percent = total > 0 ? `${Math.round((used / total) * 100)}%` : '0%';
+
+              return {
+                mounted: row.DeviceID,
+                total,
+                used,
+                free,
+                capacity: percent,
+                isRemovable: Number(row.DriveType) === 2
+              };
+            })
+            .filter((disk) => disk.total > 0);
+
+          resolve(diskData);
+        } catch (parseError) {
+          reject(parseError);
+        }
+      }
+    );
+  });
 
 // --- DATA STORE ---
 let fileEvents = [];
@@ -100,6 +146,11 @@ const addEvent = (event) => {
 // 1. Multi-Disk Space check (Fixed + Removable/USB)
 app.get('/api/system/disk', async (req, res) => {
   try {
+    if (process.platform === 'win32') {
+      const windowsDisks = await getWindowsDiskInfo();
+      return res.json({ success: true, data: windowsDisks });
+    }
+
     const disks = await nodeDiskInfo.getDiskInfo();
     const diskData = disks.map(disk => ({
       mounted: disk.mounted,

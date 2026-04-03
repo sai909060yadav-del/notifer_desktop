@@ -41,6 +41,12 @@ npm install
 Run both components simultaneously from the root directory:
 
 ```bash
+npm run dev:all
+```
+
+Or run them separately in two terminals if you prefer:
+
+```bash
 # Terminal 1: Run Frontend (Vite)
 npm run dev
 
@@ -85,6 +91,20 @@ To receive cross-device notifications on your phone, you must configure your **G
 1.  Go to the **Settings** tab in SynqNotify.
 2.  Provide your Gmail address and a [Google App Password](https://myaccount.google.com/apppasswords).
 3.  Click **Test Connectivity** to verify instantly!
+
+---
+
+## ▲ Vercel Deployment Note
+
+This frontend calls a backend API. In production, set this environment variable in Vercel:
+
+```bash
+VITE_API_BASE_URL=https://your-backend-host
+```
+
+Without that variable, production uses same-origin `/api/*` routes. If you do not deploy backend routes there, the app will show backend as offline.
+
+Important: Local OS features (file watching, local desktop notifications, local disk scan) are designed for the local Node backend and are not fully portable to serverless hosting.
 
 ---
 

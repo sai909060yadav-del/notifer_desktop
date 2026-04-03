@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HardDrive, Activity, Download, Send, Battery, Copy, CheckCircle, Usb } from 'lucide-react';
+import { apiUrl } from '../config/api';
 
 const SystemMonitor = () => {
   const [disks, setDisks] = useState([]);
@@ -27,7 +28,7 @@ const SystemMonitor = () => {
   };
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/system/disk')
+    fetch(apiUrl('/api/system/disk'))
       .then(r => r.json())
       .then(d => { if (d.success) setDisks(d.data); })
       .catch(e => console.error("Disk API error. Is backend running?", e));
@@ -49,7 +50,7 @@ const SystemMonitor = () => {
     e.preventDefault();
     if (!watchPath) return;
     setWatchStatus('Connecting...');
-    fetch('http://localhost:3000/api/system/watch-dir', {
+    fetch(apiUrl('/api/system/watch-dir'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dirPath: watchPath })
@@ -71,7 +72,7 @@ const SystemMonitor = () => {
 
   const testPythonHook = () => {
     setTestStatus('Sending...');
-    fetch('http://localhost:3000/api/notify', {
+    fetch(apiUrl('/api/notify'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: "Test: Endpoint reached successfully!" })
