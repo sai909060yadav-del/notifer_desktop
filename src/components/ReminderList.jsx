@@ -25,7 +25,14 @@ const ReminderList = ({ reminders, onDelete }) => {
               <Bell size={24} />
             </div>
             <div>
-              <h4 style={{ fontSize: '1.125rem', marginBottom: '4px' }}>{reminder.title}</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                <h4 style={{ fontSize: '1.125rem', margin: 0 }}>{reminder.title}</h4>
+                {reminder.notified ? (
+                   <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', background: 'var(--success)', color: 'white', textTransform: 'uppercase', fontWeight: 700 }}>Sent</span>
+                ) : (
+                   <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>Ready</span>
+                )}
+              </div>
               <div style={{ display: 'flex', gap: '16px', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Calendar size={14} />

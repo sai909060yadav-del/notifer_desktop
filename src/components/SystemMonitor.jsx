@@ -158,75 +158,93 @@ const SystemMonitor = () => {
           <Activity size={20} color="var(--accent-primary)" />
           Developer Webhook API
         </h3>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '0.875rem' }}>
-          Embed this instantly into your external scripts, frontend pipelines, or servers to trigger notifications natively.
-        </p>
         
-        <div style={{ position: 'relative', marginBottom: '16px' }}>
-
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-            {Object.keys(snippets).map(lang => (
-              <button
-                key={lang}
-                type="button"
-                onClick={() => handleTabChange(lang)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  background: langTab === lang ? 'var(--accent-primary)' : 'var(--bg-primary)',
-                  color: langTab === lang ? '#fff' : 'var(--text-secondary)',
-                  fontSize: '0.75rem',
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  transition: '0.2s ease',
-                  border: langTab === lang ? 'none' : '1px solid var(--border-color)',
-                  cursor: 'pointer'
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
+          <div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '0.875rem' }}>
+              Embed this instantly into your external scripts, frontend pipelines, or servers.
+            </p>
+            
+            <div style={{ position: 'relative', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {Object.keys(snippets).map(lang => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => handleTabChange(lang)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      background: langTab === lang ? 'var(--accent-primary)' : 'var(--bg-primary)',
+                      color: langTab === lang ? '#fff' : 'var(--text-secondary)',
+                      fontSize: '0.65rem',
+                      textTransform: 'uppercase',
+                      fontWeight: 700,
+                      transition: '0.2s ease',
+                      border: langTab === lang ? 'none' : '1px solid var(--border-color)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {lang}
+                  </button>
+                ))}
+              </div>
+              
+              <textarea 
+                value={customCode}
+                onChange={(e) => setCustomCode(e.target.value)}
+                spellCheck="false"
+                style={{ 
+                  width: '100%', 
+                  background: '#0a0a0a', 
+                  padding: '16px', 
+                  paddingRight: '48px', 
+                  borderRadius: '8px', 
+                  color: '#10b981', 
+                  fontFamily: 'monospace', 
+                  fontSize: '0.8125rem', 
+                  border: '1px solid var(--border-color)',
+                  minHeight: '140px',
+                  resize: 'none',
+                  outline: 'none'
                 }}
+              />
+
+              <button 
+                type="button"
+                onClick={handleCopy}
+                className="btn-icon" 
+                style={{ position: 'absolute', right: '8px', bottom: '16px', background: 'rgba(255,255,255,0.1)' }}
+                title="Copy to clipboard"
               >
-                {lang}
+                {copied ? <CheckCircle size={16} color="var(--success)" /> : <Copy size={16} />}
               </button>
-            ))}
+            </div>
+
+            <button 
+              className="btn-primary" 
+              onClick={testPythonHook}
+              style={{ background: testStatus.includes('✅') ? 'var(--success)' : '', width: '100%' }}
+            >
+              <Send size={16} /> 
+              {testStatus || "Ping Local Backend"}
+            </button>
           </div>
-          
-          <textarea 
-            value={customCode}
-            onChange={(e) => setCustomCode(e.target.value)}
-            spellCheck="false"
-            style={{ 
-              width: '100%', 
-              background: 'var(--bg-primary)', 
-              padding: '16px', 
-              paddingRight: '48px', 
-              borderRadius: '8px', 
-              color: '#10b981', 
-              fontFamily: 'monospace', 
-              fontSize: '0.875rem', 
-              border: '1px solid var(--border-color)',
-              minHeight: '140px',
-              resize: 'vertical',
-              outline: 'none'
-            }}
-          />
 
-          <button 
-            type="button"
-            onClick={handleCopy}
-            className="btn-icon" 
-            style={{ position: 'absolute', right: '8px', bottom: '16px', background: 'rgba(255,255,255,0.1)' }}
-            title="Copy to clipboard"
-          >
-            {copied ? <CheckCircle size={16} color="var(--success)" /> : <Copy size={16} />}
-          </button>
+          <div style={{ background: '#0a0a0a', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-color)', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '8px', height: '8px', background: 'var(--success)', borderRadius: '50%' }}></div>
+              LIVE DETECTION TERMINAL
+            </div>
+            <div style={{ padding: '12px', flex: 1, fontFamily: 'monospace', fontSize: '0.7rem', color: '#10b981', overflowY: 'auto' }}>
+              <div style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>[SYSTEM] Initializing stream...</div>
+              <div style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>[SYSTEM] Tracking localhost:3000</div>
+              <div style={{ color: 'var(--success)', marginBottom: '8px' }}>[READY] Waiting for hooks...</div>
+              {/* This is a static visual for the demo, but we'll feed it later or just leave it for aesthetics */}
+              <div className="blink" style={{ width: '8px', height: '14px', background: '#10b981', display: 'inline-block' }}></div>
+            </div>
+          </div>
         </div>
-
-        <button 
-          className="btn-primary" 
-          onClick={testPythonHook}
-          style={{ background: testStatus.includes('✅') ? 'var(--success)' : '' }}
-        >
-          <Send size={16} /> 
-          {testStatus || "Ping Local Backend"}
-        </button>
       </div>
 
     </div>

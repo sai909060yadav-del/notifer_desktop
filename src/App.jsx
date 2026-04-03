@@ -4,10 +4,13 @@ import ReminderList from './components/ReminderList';
 import ReminderForm from './components/ReminderForm';
 import SystemMonitor from './components/SystemMonitor';
 import EmailSettings from './components/EmailSettings';
+import SystemHealth from './components/SystemHealth';
+import ActivityHub from './components/ActivityHub';
 import './App.css';
 
 function App() {
   const [reminders, setReminders] = useState([]);
+  const [eventHistory, setEventHistory] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
@@ -36,15 +39,18 @@ function App() {
       fetch('http://localhost:3000/api/events')
         .then(r => r.json())
         .then(data => {
-          if (data && data.success && data.data.length > 0) {
-            data.data.forEach(event => {
-              if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(event.title || 'SynqNotify Alert', {
-                  body: event.message,
-                  icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827370.png'
-                });
-              }
-            });
+          if (data && data.success) {
+            if (data.history) setEventHistory(data.history);
+            if (data.data.length > 0) {
+              data.data.forEach(event => {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  new Notification(event.title || 'SynqNotify Alert', {
+                    body: event.message,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827370.png'
+                  });
+                }
+              });
+            }
           }
         })
         .catch(e => { /* Ignore fetch errors if backend is offline */ });
@@ -80,6 +86,17 @@ function App() {
                   icon: 'https://cdn-icons-png.flaticon.com/512/1827/1827370.png'
                 });
               }
+
+              // SYNC TO BACKEND FOR EMAIL ALERT
+              fetch('http://localhost:3000/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  title: 'Reminder Triggered ⏰',
+                  message: `Your reminder "${reminder.title}" is due now!`,
+                  isReminder: true 
+                })
+              }).catch(() => {});
             }
           }
         });
@@ -148,6 +165,7 @@ function App() {
 
       {/* Main Content */}
       <main className="main-content">
+        <SystemHealth />
         <header className="main-header">
           <div>
             <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>
@@ -166,18 +184,26 @@ function App() {
         </header>
 
         {activeTab === 'dashboard' ? (
-          <>
-            {showForm && (
-              <div className="animate-slide-in glass-panel create-form">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                  <h3 style={{ fontSize: '1.25rem' }}>Create New Reminder</h3>
-                  <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
+          <div className="dashboard-grid">
+            <div className="dashboard-main">
+              {showForm && (
+                <div className="animate-slide-in glass-panel create-form">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '1.25rem' }}>Create New Reminder</h3>
+                    <button className="btn-icon" onClick={() => setShowForm(false)}>✕</button>
+                  </div>
+                  <ReminderForm onSubmit={addReminder} onCancel={() => setShowForm(false)} />
                 </div>
-                <ReminderForm onSubmit={addReminder} onCancel={() => setShowForm(false)} />
-              </div>
-            )}
-            <ReminderList reminders={reminders} onDelete={deleteReminder} />
-          </>
+              )}
+              <h3 style={{ fontSize: '1rem', marginBottom: '16px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                 <Bell size={16}/> Upcoming Reminders
+              </h3>
+              <ReminderList reminders={reminders} onDelete={deleteReminder} />
+            </div>
+            <div className="dashboard-sidebar">
+              <ActivityHub history={eventHistory} />
+            </div>
+          </div>
         ) : activeTab === 'monitor' ? (
           <SystemMonitor />
         ) : (

@@ -1,1 +1,28 @@
+# Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npmrc
+
+# Vite / React Build
+dist/
+dist-ssr/
+*.local
+
+# SynqNotify Local Data & Logs
+src/backend/events.json
+src/backend/install.log
+src/backend/node_modules/
+events.json
+.events.json
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

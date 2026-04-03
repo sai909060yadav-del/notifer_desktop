@@ -1,16 +1,92 @@
-# React + Vite
+# SynqNotify Pro 🚀
+### The Ultimate OS-Native Developer Notification Hub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SynqNotify is a powerful, professional-grade PWA that bridges the gap between your local system scripts and your mobile devices. It transforms your PC into an intelligent assistant that watches file changes, handles developer webhooks, and syncs reminders globally.
 
-Currently, two official plugins are available:
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-6366f1.svg)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ✨ Pro Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **🖥️ Headless OS Integration**: Get Windows system toasts natively via its Node.js backend. Works even if your browser is closed.
+*   **📧 Cross-Device Email Sync**: Professional HTML-formatted email alerts for every system event.
+*   **⚡ Developer Webhook API**: A one-line integration for any script (Python, JS, C#, Shell).
+*   **📂 Automatic Download Monitor**: Native file-system watcher (Chokidar) that notifies you when downloads or builds are ready.
+*   **💾 Activity Hub**: A persistent database (JSON-backed) that stores your history across reboots.
+*   **🔍 System Health Hub**: Real-time diagnostic bar for notification permissions and backend status.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Quick Start
+
+### 1. Prerequisites
+*   Node.js (v18+)
+*   Python (for demos)
+
+### 2. Installation
+Clone the repository and install dependencies for both the frontend and backend:
+
+```bash
+# Install Frontend
+npm install
+
+# Install Backend
+cd src/backend
+npm install
+```
+
+### 3. Launching SynqNotify
+Run both components simultaneously from the root directory:
+
+```bash
+# Terminal 1: Run Frontend (Vite)
+npm run dev
+
+# Terminal 2: Run Backend (Node)
+cd src/backend
+npm start
+```
+
+---
+
+## 👨‍💻 Developer Webhook API
+
+Trigger a synchronized desktop + email notification from ANY external script.
+
+**Endpoint**: `POST http://localhost:3000/api/notify`
+
+**Request Body**:
+```json
+{
+  "title": "Build Finished 🏗️",
+  "message": "Project v2.1.0 deployed to staging successfully.",
+  "type": "SUCCESS"
+}
+```
+
+### Python Integration Example
+```python
+import requests
+
+requests.post('http://localhost:3000/api/notify', json={
+    'message': 'Task execution completed ✅',
+    'title': 'Development Hook'
+})
+```
+
+---
+
+## ⚙️ Configuration (Email Sync)
+
+To receive cross-device notifications on your phone, you must configure your **Gmail App Password**.
+
+1.  Go to the **Settings** tab in SynqNotify.
+2.  Provide your Gmail address and a [Google App Password](https://myaccount.google.com/apppasswords).
+3.  Click **Test Connectivity** to verify instantly!
+
+---
+
+## 🛡️ License
+Released under the [MIT License](LICENSE).
