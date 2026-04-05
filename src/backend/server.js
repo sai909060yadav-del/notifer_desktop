@@ -12,7 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const HISTORY_FILE = 'events.json';
 const REMINDERS_FILE = 'reminders.json';
 const CONFIG_FILE = 'config.json';
