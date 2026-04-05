@@ -4,7 +4,9 @@ import { apiUrl } from '../config/api';
 
 const EmailSettings = () => {
   const [email, setEmail] = useState('');
+  const [savedEmail, setSavedEmail] = useState('');
   const [pass, setPass] = useState('');
+  const [hasStoredPassword, setHasStoredPassword] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState('');
@@ -17,7 +19,9 @@ const EmailSettings = () => {
       .then(d => {
         if (d.success && d.data.user) {
           setEmail(d.data.user);
-          setPass('********'); // Obfuscate password for pro-level security display
+          setSavedEmail(d.data.user);
+          setHasStoredPassword(Boolean(d.data.hasPassword));
+          setPass('');
         }
       });
   }, []);
@@ -26,29 +30,45 @@ const EmailSettings = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    const payload = { user: email, to: email };
+    if (pass.trim()) payload.pass = pass;
     fetch(apiUrl('/api/settings/email'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user: email, pass: pass, to: email })
+      body: JSON.stringify(payload)
     }).then(r => r.json()).then(data => {
+      if (pass.trim()) {
+        setHasStoredPassword(true);
+        setSavedEmail(email);
+      } else if (email !== savedEmail) {
+        setHasStoredPassword(false);
+        setSavedEmail(email);
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     });
   };
 
   const testConnection = () => {
-    if (!email || !pass) {
-        setError('Please enter both email and password first.');
+    if (!email) {
+      setError('Please enter your email first.');
+      return;
+    }
+
+    if (!pass.trim() && !(hasStoredPassword && email === savedEmail)) {
+      setError('Enter your Gmail App Password before testing, or save it first.');
         return;
     }
     setTesting(true);
     setError('');
     setSuccess('');
+    const payload = { user: email, to: email };
+    if (pass.trim()) payload.pass = pass;
     
     fetch(apiUrl('/api/settings/email/test'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: email, pass: pass, to: email })
+      body: JSON.stringify(payload)
     })
     .then(r => r.json())
     .then(data => {
@@ -90,6 +110,9 @@ const EmailSettings = () => {
           onChange={(e) => setPass(e.target.value)}
           placeholder="Gmail App Password"
         />
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '-8px' }}>
+          Leave blank to keep the currently saved app password.
+        </div>
         
         <div style={{ display: 'flex', gap: '12px' }}>
             <button type="submit" className="btn-primary" style={{ flex: 1 }}>

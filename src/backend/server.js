@@ -243,31 +243,39 @@ app.get('/api/events', (req, res) => {
 // 5. Settings config
 app.post('/api/settings/email', (req, res) => {
     const { user, pass, to } = req.body;
-    emailConfig = { user, pass, to };
+  emailConfig = {
+    user: user || emailConfig.user,
+    pass: pass && pass !== '********' ? pass : emailConfig.pass,
+    to: to || emailConfig.to
+  };
     saveConfig();
     res.json({ success: true, message: 'Email config saved to disk' });
 });
 
 // 5b. GET Email settings
 app.get('/api/settings/email', (req, res) => {
-    res.json({ success: true, data: { user: emailConfig.user, to: emailConfig.to } });
+  res.json({ success: true, data: { user: emailConfig.user, to: emailConfig.to, hasPassword: Boolean(emailConfig.pass) } });
 });
 
 // 6. Test Email Connection (with detailed errors)
 app.post('/api/settings/email/test', async (req, res) => {
     const { user, pass, to } = req.body;
-    if (!user || !pass || !to) return res.status(400).json({ success: false, error: 'Missing credentials' });
+  const effectiveUser = user || emailConfig.user;
+  const effectivePass = pass && pass !== '********' ? pass : emailConfig.pass;
+  const effectiveTo = to || emailConfig.to;
+
+  if (!effectiveUser || !effectivePass || !effectiveTo) return res.status(400).json({ success: false, error: 'Missing credentials' });
 
     const transporter = nodemailer.createTransport({
         service: 'gmail',
-        auth: { user, pass }
+    auth: { user: effectiveUser, pass: effectivePass }
     });
 
     try {
         await transporter.verify();
         await transporter.sendMail({
-            from: user,
-            to: to,
+      from: effectiveUser,
+      to: effectiveTo,
             subject: '[SynqNotify] Connection Test successful! ✅',
             text: 'Your SMTP settings are correctly configured. You will now receive all system alerts via email.'
         });

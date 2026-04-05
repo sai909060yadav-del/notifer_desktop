@@ -12,6 +12,8 @@ dist-ssr/
 
 # SynqNotify Local Data & Logs
 src/backend/events.json
+src/backend/config.json
+src/backend/reminders.json
 src/backend/install.log
 src/backend/node_modules/
 events.json
