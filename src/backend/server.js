@@ -143,6 +143,15 @@ const addEvent = (event) => {
 
 // --- ROUTES ---
 
+// 0. Health Check
+app.get('/', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'SynqNotify Backend is running ✅',
+    uptime: process.uptime()
+  });
+});
+
 // 1. Multi-Disk Space check (Fixed + Removable/USB)
 app.get('/api/system/disk', async (req, res) => {
   try {
