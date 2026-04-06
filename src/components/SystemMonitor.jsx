@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HardDrive, Activity, Download, Send, Battery, Copy, CheckCircle, Usb } from 'lucide-react';
-import { apiUrl } from '../config/api';
+import { apiFetch } from '../config/api';
 
 const SystemMonitor = () => {
   const [disks, setDisks] = useState([]);
@@ -13,10 +13,10 @@ const SystemMonitor = () => {
 
   const snippets = {
     python: `import requests\n\nrequests.post(\n  'http://localhost:3000/api/notify', \n  json={'message': 'Execution finished!'}\n)`,
-    javascript: `fetch('http://localhost:3000/api/notify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ message: 'Execution finished!' })\n});`,
-    html: `<!-- Paste this inside your HTML <body> -->\n<script>\n  fetch('http://localhost:3000/api/notify', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ message: 'Execution finished!' })\n  });\n</script>`,
+    javascript: `fetch('http://localhost:3000/api/notify', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json', 'x-api-key': 'YOUR_API_KEY' },\n  body: JSON.stringify({ message: 'Execution finished!' })\n});`,
+    html: `<!-- Paste this inside your HTML <body> -->\n<script>\n  fetch('http://localhost:3000/api/notify', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json', 'x-api-key': 'YOUR_API_KEY' },\n    body: JSON.stringify({ message: 'Execution finished!' })\n  });\n</script>`,
     'c#': `using System.Net.Http;\nusing System.Text;\n\nvar client = new HttpClient();\nvar content = new StringContent(\"{\\"message\\": \\"Execution finished!\\"}\", Encoding.UTF8, \"application/json\");\nawait client.PostAsync(\"http://localhost:3000/api/notify\", content);`,
-    curl: `curl -X POST http://localhost:3000/api/notify \\\n  -H "Content-Type: application/json" \\\n  -d '{"message":"Execution finished!"}'`
+    curl: `curl -X POST http://localhost:3000/api/notify \\\n  -H "Content-Type: application/json" \\\n  -H "x-api-key: YOUR_API_KEY" \\\n  -d '{"message":"Execution finished!"}'`
   };
 
   const [langTab, setLangTab] = useState('python');
@@ -28,7 +28,7 @@ const SystemMonitor = () => {
   };
 
   useEffect(() => {
-    fetch(apiUrl('/api/system/disk'))
+    apiFetch('/api/system/disk')
       .then(r => r.json())
       .then(d => { if (d.success) setDisks(d.data); })
       .catch(e => console.error("Disk API error. Is backend running?", e));
@@ -50,7 +50,7 @@ const SystemMonitor = () => {
     e.preventDefault();
     if (!watchPath) return;
     setWatchStatus('Connecting...');
-    fetch(apiUrl('/api/system/watch-dir'), {
+    apiFetch('/api/system/watch-dir', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dirPath: watchPath })
@@ -72,7 +72,7 @@ const SystemMonitor = () => {
 
   const testPythonHook = () => {
     setTestStatus('Sending...');
-    fetch(apiUrl('/api/notify'), {
+    apiFetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: "Test: Endpoint reached successfully!" })

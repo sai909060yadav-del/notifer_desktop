@@ -13,9 +13,26 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
+const API_KEY = (process.env.API_KEY || '').trim();
 const HISTORY_FILE = 'events.json';
 const REMINDERS_FILE = 'reminders.json';
 const CONFIG_FILE = 'config.json';
+
+app.use('/api', (req, res, next) => {
+  // Allow local/dev mode without API key by leaving API_KEY unset.
+  if (!API_KEY || req.method === 'OPTIONS') {
+    next();
+    return;
+  }
+
+  const incomingKey = (req.headers['x-api-key'] || '').toString().trim();
+  if (incomingKey !== API_KEY) {
+    res.status(401).json({ success: false, error: 'Unauthorized' });
+    return;
+  }
+
+  next();
+});
 
 const getWindowsDiskInfo = () =>
   new Promise((resolve, reject) => {
